@@ -1,10 +1,9 @@
-import React, { Component } from "react";
-import { graphql } from "react-apollo";
-import gql from "graphql-tag";
+import React, { Component } from 'react'
+import { graphql, Query } from 'react-apollo'
+import gql from 'graphql-tag'
 
 class App extends Component {
   render() {
-    const { data: { loading, people } } = this.props;
     return (
       <main>
         <header>
@@ -15,7 +14,7 @@ class App extends Component {
             reload with the changes.
           </p>
           <p>
-            The code which renders this component lives in{" "}
+            The code which renders this component lives in{' '}
             <code>./src/App.js</code>.
           </p>
           <p>
@@ -24,25 +23,55 @@ class App extends Component {
             ids.
           </p>
         </header>
-        {loading ? (
-          <p>Loading…</p>
-        ) : (
-          <ul>
-            {people.map(person => <li key={person.id}>{person.name}</li>)}
-          </ul>
-        )}
+        <ul>
+          <button
+            onClick={() => {
+              this.props.addPost('test')
+            }}
+          >
+            add test post
+          </button>
+          <Query
+            query={gql`
+              query {
+                hello
+              }
+            `}
+          >
+            {({ data }) => data.hello || 'loading'}
+          </Query>
+        </ul>
       </main>
-    );
+    )
   }
 }
 
-export default graphql(
-  gql`
-    query ErrorTemplate {
-      people {
-        id
-        name
-      }
+const WITH_CREATE_POST = gql`
+  mutation($text: String) {
+    createPost(text: $text) {
+      id
+      text
     }
-  `
-)(App);
+  }
+`
+
+const withCreatePost = graphql(WITH_CREATE_POST, {
+  props: ({ mutate }) => ({
+    addPost: text => {
+      mutate({
+        variables: {
+          input: { text }
+        },
+        optimisticResponse: {
+          createPost: {
+            __typename: 'Post',
+            id: null,
+            text
+          }
+        }
+      })
+    }
+  })
+})
+
+export default withCreatePost(App)
